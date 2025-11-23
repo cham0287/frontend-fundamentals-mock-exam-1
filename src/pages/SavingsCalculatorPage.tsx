@@ -1,16 +1,7 @@
 import { useEffect, useState } from 'react';
-import {
-  Assets,
-  Border,
-  colors,
-  ListHeader,
-  ListRow,
-  NavigationBar,
-  SelectBottomSheet,
-  Spacing,
-  Tab,
-  TextField,
-} from 'tosslib';
+import { Border, ListHeader, ListRow, NavigationBar, SelectBottomSheet, Spacing, Tab, TextField } from 'tosslib';
+import { SavingsProductItem } from '../components/SavingsProductItem';
+import { SavingResult } from '../components/SavingResult';
 import { fetchSavingsProducts } from '../api/savings';
 import { SavingsProduct } from '../types';
 import { formatNumber, toNumericString } from '../utils/formatters';
@@ -68,6 +59,21 @@ export function SavingsCalculatorPage() {
   const recommendedMonthlyAmount = selectedProduct
     ? calculateRecommendedMonthlyDeposit(targetAmount ?? 0, term, selectedProduct.annualRate)
     : 0;
+
+  const savingCalculationResults = [
+    {
+      label: '예상 수익 금액',
+      value: `${formatNumber(expectedEarnings)}원`,
+    },
+    {
+      label: '목표 금액과의 차이',
+      value: `${difference > 0 ? '-' : ''}${formatNumber(Math.abs(difference))}원`,
+    },
+    {
+      label: '추천 월 납입 금액',
+      value: `${formatNumber(recommendedMonthlyAmount)}원`,
+    },
+  ];
 
   const recommendedProducts = [...filteredProducts]
     .sort((a, b) => b.annualRate - a.annualRate)
@@ -130,21 +136,11 @@ export function SavingsCalculatorPage() {
       {activeTab === 'products' && (
         <>
           {filteredProducts.map(product => (
-            <ListRow
+            <SavingsProductItem
               key={product.id}
-              contents={
-                <ListRow.Texts
-                  type="3RowTypeA"
-                  top={product.name}
-                  topProps={{ fontSize: 16, fontWeight: 'bold', color: colors.grey900 }}
-                  middle={`연 이자율: ${product.annualRate}%`}
-                  middleProps={{ fontSize: 14, color: colors.blue600, fontWeight: 'medium' }}
-                  bottom={`${formatNumber(product.minMonthlyAmount)}원 ~ ${formatNumber(product.maxMonthlyAmount)}원 | ${product.availableTerms}개월`}
-                  bottomProps={{ fontSize: 13, color: colors.grey600 }}
-                />
-              }
-              right={selectedProductId === product.id ? <Assets.Icon name="icon-check-circle-green" /> : null}
-              onClick={() => setSelectedProductId(product.id)}
+              product={product}
+              isSelected={selectedProductId === product.id}
+              onSelect={() => setSelectedProductId(product.id)}
             />
           ))}
         </>
@@ -157,39 +153,9 @@ export function SavingsCalculatorPage() {
             <ListRow contents={<ListRow.Texts type="1RowTypeA" top="상품을 선택해주세요." />} />
           ) : (
             <>
-              <ListRow
-                contents={
-                  <ListRow.Texts
-                    type="2RowTypeA"
-                    top="예상 수익 금액"
-                    topProps={{ color: colors.grey600 }}
-                    bottom={`${formatNumber(expectedEarnings)}원`}
-                    bottomProps={{ fontWeight: 'bold', color: colors.blue600 }}
-                  />
-                }
-              />
-              <ListRow
-                contents={
-                  <ListRow.Texts
-                    type="2RowTypeA"
-                    top="목표 금액과의 차이"
-                    topProps={{ color: colors.grey600 }}
-                    bottom={`${difference > 0 ? '-' : ''}${formatNumber(Math.abs(difference))}원`}
-                    bottomProps={{ fontWeight: 'bold', color: colors.blue600 }}
-                  />
-                }
-              />
-              <ListRow
-                contents={
-                  <ListRow.Texts
-                    type="2RowTypeA"
-                    top="추천 월 납입 금액"
-                    topProps={{ color: colors.grey600 }}
-                    bottom={`${formatNumber(recommendedMonthlyAmount)}원`}
-                    bottomProps={{ fontWeight: 'bold', color: colors.blue600 }}
-                  />
-                }
-              />
+              {savingCalculationResults.map(({ label, value }) => (
+                <SavingResult key={label} label={label} value={value} />
+              ))}
 
               <Spacing size={8} />
               <Border height={16} />
@@ -201,21 +167,11 @@ export function SavingsCalculatorPage() {
               <Spacing size={12} />
 
               {recommendedProducts.map(product => (
-                <ListRow
+                <SavingsProductItem
                   key={product.id}
-                  contents={
-                    <ListRow.Texts
-                      type="3RowTypeA"
-                      top={product.name}
-                      topProps={{ fontSize: 16, fontWeight: 'bold', color: colors.grey900 }}
-                      middle={`연 이자율: ${product.annualRate}%`}
-                      middleProps={{ fontSize: 14, color: colors.blue600, fontWeight: 'medium' }}
-                      bottom={`${formatNumber(product.minMonthlyAmount)}원 ~ ${formatNumber(product.maxMonthlyAmount)}원 | ${product.availableTerms}개월`}
-                      bottomProps={{ fontSize: 13, color: colors.grey600 }}
-                    />
-                  }
-                  right={selectedProductId === product.id ? <Assets.Icon name="icon-check-circle-green" /> : null}
-                  onClick={() => setSelectedProductId(product.id)}
+                  product={product}
+                  isSelected={selectedProductId === product.id}
+                  onSelect={() => setSelectedProductId(product.id)}
                 />
               ))}
             </>
