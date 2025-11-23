@@ -1,10 +1,11 @@
 import { Suspense, useState } from 'react';
 import { Border, ListHeader, ListRow, NavigationBar, SelectBottomSheet, Spacing, Tab, TextField } from 'tosslib';
+import { z } from 'zod';
 import { SavingsProductItem } from '../components/SavingsProductItem';
 import { SavingResult } from '../components/SavingResult';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { useSavingsProducts } from '../hooks/useSavingsProducts';
-import { formatNumber, toNumericString } from '../utils/formatters';
+import { formatNumber } from '../utils/formatters';
 import { filterProducts } from '../utils/productFilter';
 import { calculateEarnings, calculateRecommendedMonthlyDeposit } from '../utils/savingsCalculator';
 import { DEFAULT_SAVING_PERIOD_MONTHS, DEFAULT_SELECTABLE_TERMS_OPTIONS, RECOMMENDED_PRODUCTS_COUNT } from 'const';
@@ -19,20 +20,28 @@ function SavingsCalculatorContent() {
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<SavingCaculatorPageTabs>('products');
 
+  const numericStringSchema = z
+    .string()
+    .transform(val => val.replace(/,/g, ''))
+    .pipe(
+      z
+        .literal('')
+        .transform(() => undefined)
+        .or(z.string().transform(Number).pipe(z.number().nonnegative()))
+    );
+
   const handleTargetAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = toNumericString(e.target.value);
-    if (value === null) {
-      return;
+    const parsed = numericStringSchema.safeParse(e.target.value);
+    if (parsed.success) {
+      setTargetAmount(parsed.data);
     }
-    setTargetAmount(value === '' ? undefined : Number(value));
   };
 
   const handleMonthlyAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = toNumericString(e.target.value);
-    if (value === null) {
-      return;
+    const parsed = numericStringSchema.safeParse(e.target.value);
+    if (parsed.success) {
+      setMonthlyAmount(parsed.data);
     }
-    setMonthlyAmount(value === '' ? undefined : Number(value));
   };
 
   const handleToggle = (id: string) => {
