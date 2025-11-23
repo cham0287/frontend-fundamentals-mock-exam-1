@@ -1,9 +1,9 @@
-import { useEffect, useState } from 'react';
+import { Suspense, useState } from 'react';
 import { Border, ListHeader, ListRow, NavigationBar, SelectBottomSheet, Spacing, Tab, TextField } from 'tosslib';
 import { SavingsProductItem } from '../components/SavingsProductItem';
 import { SavingResult } from '../components/SavingResult';
-import { fetchSavingsProducts } from '../api/savings';
-import { SavingsProduct } from '../types';
+import { ErrorBoundary } from '../components/ErrorBoundary';
+import { useSavingsProducts } from '../hooks/useSavingsProducts';
 import { formatNumber, toNumericString } from '../utils/formatters';
 import { filterProducts } from '../utils/productFilter';
 import { calculateEarnings, calculateRecommendedMonthlyDeposit } from '../utils/savingsCalculator';
@@ -11,21 +11,13 @@ import { DEFAULT_SAVING_PERIOD_MONTHS, DEFAULT_SELECTABLE_TERMS_OPTIONS, RECOMME
 
 type SavingCaculatorPageTabs = 'products' | 'results';
 
-export function SavingsCalculatorPage() {
-  const [products, setProducts] = useState<SavingsProduct[]>([]);
+function SavingsCalculatorContent() {
+  const { data: products } = useSavingsProducts();
   const [targetAmount, setTargetAmount] = useState<number | undefined>(undefined);
   const [monthlyAmount, setMonthlyAmount] = useState<number | undefined>(undefined);
   const [term, setTerm] = useState<number>(DEFAULT_SAVING_PERIOD_MONTHS);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<SavingCaculatorPageTabs>('products');
-
-  useEffect(() => {
-    fetchSavingsProducts()
-      .then(setProducts)
-      .catch(e => {
-        console.error('상품 목록을 불러오는데 실패했습니다.', e);
-      });
-  }, []);
 
   const handleTargetAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = toNumericString(e.target.value);
@@ -180,5 +172,15 @@ export function SavingsCalculatorPage() {
         </>
       )}
     </>
+  );
+}
+
+export function SavingsCalculatorPage() {
+  return (
+    <ErrorBoundary>
+      <Suspense fallback={<ListRow contents={<ListRow.Texts type="1RowTypeA" top="상품 목록을 불러오는 중..." />} />}>
+        <SavingsCalculatorContent />
+      </Suspense>
+    </ErrorBoundary>
   );
 }
