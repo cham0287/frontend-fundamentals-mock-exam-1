@@ -35,6 +35,10 @@ function SavingsCalculatorContent() {
     setMonthlyAmount(value === '' ? undefined : Number(value));
   };
 
+  const handleToggle = (id: string) => {
+    setSelectedProductId(prev => (prev === id ? null : id));
+  };
+
   const filteredProducts = filterProducts(products, {
     monthlyAmount: monthlyAmount,
     term: term,
@@ -132,7 +136,7 @@ function SavingsCalculatorContent() {
               key={product.id}
               product={product}
               isSelected={selectedProductId === product.id}
-              onSelect={() => setSelectedProductId(product.id)}
+              onSelect={() => handleToggle(product.id)}
             />
           ))}
         </>
@@ -163,7 +167,7 @@ function SavingsCalculatorContent() {
                   key={product.id}
                   product={product}
                   isSelected={selectedProductId === product.id}
-                  onSelect={() => setSelectedProductId(product.id)}
+                  onSelect={() => handleToggle(product.id)}
                 />
               ))}
             </>
