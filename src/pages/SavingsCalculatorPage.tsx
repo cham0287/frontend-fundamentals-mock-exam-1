@@ -152,26 +152,23 @@ function SavingsCalculatorContent() {
               {savingCalculationResults.map(({ label, value }) => (
                 <SavingResult key={label} label={label} value={value} />
               ))}
-
-              <Spacing size={8} />
-              <Border height={16} />
-              <Spacing size={8} />
-
-              <ListHeader
-                title={<ListHeader.TitleParagraph fontWeight="bold">추천 상품 목록</ListHeader.TitleParagraph>}
-              />
-              <Spacing size={12} />
-
-              {recommendedProducts.map(product => (
-                <SavingsProductItem
-                  key={product.id}
-                  product={product}
-                  isSelected={selectedProductId === product.id}
-                  onSelect={() => handleToggle(product.id)}
-                />
-              ))}
             </>
           )}
+
+          <Spacing size={8} />
+          <Border height={16} />
+          <Spacing size={8} />
+
+          <ListHeader title={<ListHeader.TitleParagraph fontWeight="bold">추천 상품 목록</ListHeader.TitleParagraph>} />
+          <Spacing size={12} />
+          {recommendedProducts.map(product => (
+            <SavingsProductItem
+              key={product.id}
+              product={product}
+              isSelected={selectedProductId === product.id}
+              onSelect={() => handleToggle(product.id)}
+            />
+          ))}
           <Spacing size={40} />
         </>
       )}
