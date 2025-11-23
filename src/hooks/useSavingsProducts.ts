@@ -1,9 +1,6 @@
 import { useSuspenseQuery } from '@tanstack/react-query';
-import { fetchSavingsProducts } from '../api/savings';
+import { savingsQueries } from '../queries/savingsQueries';
 
 export function useSavingsProducts() {
-  return useSuspenseQuery({
-    queryKey: ['savingsProducts'],
-    queryFn: fetchSavingsProducts,
-  });
+  return useSuspenseQuery(savingsQueries.products());
 }
