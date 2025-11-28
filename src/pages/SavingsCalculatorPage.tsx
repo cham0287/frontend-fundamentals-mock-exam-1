@@ -1,23 +1,23 @@
 import { Suspense, useState } from 'react';
-import { Border, ListHeader, ListRow, NavigationBar, SelectBottomSheet, Spacing, Tab, TextField } from 'tosslib';
+import { Border, NavigationBar, SelectBottomSheet, Spacing, Tab, TextField } from 'tosslib';
 import { z } from 'zod';
-import { SavingsProductItem } from '../components/SavingsProductItem';
-import { SavingResult } from '../components/SavingResult';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { useSavingsProducts } from '../hooks/useSavingsProducts';
 import { formatNumber } from '../utils/formatters';
-import { filterProducts } from '../utils/productFilter';
-import { calculateEarnings, calculateRecommendedMonthlyDeposit } from '../utils/savingsCalculator';
-import { DEFAULT_SAVING_PERIOD_MONTHS, DEFAULT_SELECTABLE_TERMS_OPTIONS, RECOMMENDED_PRODUCTS_COUNT } from 'const';
+import { DEFAULT_SAVING_PERIOD_MONTHS, DEFAULT_SELECTABLE_TERMS_OPTIONS } from 'const';
+import { SavingsProductList } from '../components/SavingsProductList';
+import { SavingsResults } from '../components/SavingsResults';
 
 type SavingCaculatorPageTabs = 'products' | 'results';
 
-function SavingsCalculatorContent() {
-  const { data: products } = useSavingsProducts();
+export function SavingsCalculatorPage() {
   const [targetAmount, setTargetAmount] = useState<number | undefined>(undefined);
   const [monthlyAmount, setMonthlyAmount] = useState<number | undefined>(undefined);
   const [term, setTerm] = useState<number>(DEFAULT_SAVING_PERIOD_MONTHS);
   const [selectedProductId, setSelectedProductId] = useState<string | null>(null);
+
+  // NOTE: 아래 상태 같은 간단한 경우도 useView 같은 훅으로 분리해주는 것이 좋음.
+  // 이유: 이런 view 상태를 처리하는 로직은 zustand, jotai, urlParams, 로컬 스토리지 등 여러가지 방법으로 변할 수도 있다.
+  // 그렇게 변경사항이 있을 때마다 SavingsCalculatorPage를 건드리지 않기 위해서는 이런 간단한 로직도 분리하는 것이 좋음.
   const [activeTab, setActiveTab] = useState<SavingCaculatorPageTabs>('products');
 
   const numericStringSchema = z
@@ -47,42 +47,6 @@ function SavingsCalculatorContent() {
   const handleToggle = (id: string) => {
     setSelectedProductId(prev => (prev === id ? null : id));
   };
-
-  const filteredProducts = filterProducts(products, {
-    monthlyAmount: monthlyAmount,
-    term: term,
-  });
-
-  const selectedProduct = products.find(p => p.id === selectedProductId);
-
-  const expectedEarnings = selectedProduct
-    ? calculateEarnings(monthlyAmount ?? 0, term, selectedProduct.annualRate)
-    : 0;
-
-  const difference = (targetAmount ?? 0) - expectedEarnings;
-
-  const recommendedMonthlyAmount = selectedProduct
-    ? calculateRecommendedMonthlyDeposit(targetAmount ?? 0, term, selectedProduct.annualRate)
-    : 0;
-
-  const savingCalculationResults = [
-    {
-      label: '예상 수익 금액',
-      value: `${formatNumber(expectedEarnings)}원`,
-    },
-    {
-      label: '목표 금액과의 차이',
-      value: `${difference > 0 ? '-' : ''}${formatNumber(Math.abs(difference))}원`,
-    },
-    {
-      label: '추천 월 납입 금액',
-      value: `${formatNumber(recommendedMonthlyAmount)}원`,
-    },
-  ];
-
-  const recommendedProducts = [...filteredProducts]
-    .sort((a, b) => b.annualRate - a.annualRate)
-    .slice(0, RECOMMENDED_PRODUCTS_COUNT);
 
   return (
     <>
@@ -139,58 +103,31 @@ function SavingsCalculatorContent() {
       </Tab>
 
       {activeTab === 'products' && (
-        <>
-          {filteredProducts.map(product => (
-            <SavingsProductItem
-              key={product.id}
-              product={product}
-              isSelected={selectedProductId === product.id}
-              onSelect={() => handleToggle(product.id)}
+        <ErrorBoundary>
+          <Suspense fallback={<SavingsProductList.Loading />}>
+            <SavingsProductList
+              monthlyAmount={monthlyAmount}
+              term={term}
+              selectedProductId={selectedProductId}
+              onToggle={handleToggle}
             />
-          ))}
-        </>
+          </Suspense>
+        </ErrorBoundary>
       )}
 
       {activeTab === 'results' && (
-        <>
-          <Spacing size={8} />
-          {!selectedProduct ? (
-            <ListRow contents={<ListRow.Texts type="1RowTypeA" top="상품을 선택해주세요." />} />
-          ) : (
-            <>
-              {savingCalculationResults.map(({ label, value }) => (
-                <SavingResult key={label} label={label} value={value} />
-              ))}
-            </>
-          )}
-
-          <Spacing size={8} />
-          <Border height={16} />
-          <Spacing size={8} />
-
-          <ListHeader title={<ListHeader.TitleParagraph fontWeight="bold">추천 상품 목록</ListHeader.TitleParagraph>} />
-          <Spacing size={12} />
-          {recommendedProducts.map(product => (
-            <SavingsProductItem
-              key={product.id}
-              product={product}
-              isSelected={selectedProductId === product.id}
-              onSelect={() => handleToggle(product.id)}
+        <ErrorBoundary>
+          <Suspense fallback={<SavingsResults.Loading />}>
+            <SavingsResults
+              monthlyAmount={monthlyAmount}
+              term={term}
+              targetAmount={targetAmount}
+              selectedProductId={selectedProductId}
+              onToggle={handleToggle}
             />
-          ))}
-          <Spacing size={40} />
-        </>
+          </Suspense>
+        </ErrorBoundary>
       )}
     </>
-  );
-}
-
-export function SavingsCalculatorPage() {
-  return (
-    <ErrorBoundary>
-      <Suspense fallback={<ListRow contents={<ListRow.Texts type="1RowTypeA" top="상품 목록을 불러오는 중..." />} />}>
-        <SavingsCalculatorContent />
-      </Suspense>
-    </ErrorBoundary>
   );
 }
