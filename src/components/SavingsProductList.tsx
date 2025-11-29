@@ -1,11 +1,10 @@
 import { ListRow } from 'tosslib';
 import { SavingsProductItem } from './SavingsProductItem';
-import { useSavingsProducts } from '../hooks/useSavingsProducts';
-import { filterProducts } from '../utils/productFilter';
+
+import { SavingsProduct } from '../types';
 
 interface SavingsProductListProps {
-  monthlyAmount: number | undefined;
-  term: number;
+  products: SavingsProduct[];
   selectedProductId: string | null;
   onToggle: (id: string) => void;
 }
@@ -15,17 +14,10 @@ interface SavingsProductListProps {
 // 2. Props drilling을 피하기 위해 Global state로 관리하는 방법 -> 최악의 방법
 // 3. 영속성 저장소에 저장한다. (새로고침, ...)
 // 4. url에 상태를 저장한다.
-export function SavingsProductList({ monthlyAmount, term, selectedProductId, onToggle }: SavingsProductListProps) {
-  const { data: products } = useSavingsProducts();
-
-  const filteredProducts = filterProducts(products, {
-    monthlyAmount: monthlyAmount,
-    term: term,
-  });
-
+export function SavingsProductList({ products, selectedProductId, onToggle }: SavingsProductListProps) {
   return (
     <>
-      {filteredProducts.map(product => (
+      {products.map(product => (
         <SavingsProductItem
           key={product.id}
           product={product}

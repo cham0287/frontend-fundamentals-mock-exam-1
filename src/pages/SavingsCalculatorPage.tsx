@@ -6,6 +6,9 @@ import { formatNumber } from '../utils/formatters';
 import { DEFAULT_SAVING_PERIOD_MONTHS, DEFAULT_SELECTABLE_TERMS_OPTIONS } from 'const';
 import { SavingsProductList } from '../components/SavingsProductList';
 import { SavingsResults } from '../components/SavingsResults';
+import { SuspenseQuery } from '@suspensive/react-query';
+import { savingsQueries } from '../queries/savingsQueries';
+import { SavingsProduct } from '../types';
 
 type SavingCaculatorPageTabs = 'products' | 'results';
 
@@ -46,6 +49,14 @@ export function SavingsCalculatorPage() {
 
   const handleToggle = (id: string) => {
     setSelectedProductId(prev => (prev === id ? null : id));
+  };
+
+  const filters = [createFilterByMonthlyAmount(monthlyAmount), createFilterByTerm(term)];
+  const orderBy = (products: SavingsProduct[]) => [...products].sort((a, b) => b.annualRate - a.annualRate);
+
+  const selectProducts = (products: SavingsProduct[]) => {
+    const filtered = products.filter(product => filters.every(filter => filter(product)));
+    return orderBy(filtered);
   };
 
   return (
@@ -105,12 +116,11 @@ export function SavingsCalculatorPage() {
       {activeTab === 'products' && (
         <ErrorBoundary>
           <Suspense fallback={<SavingsProductList.Loading />}>
-            <SavingsProductList
-              monthlyAmount={monthlyAmount}
-              term={term}
-              selectedProductId={selectedProductId}
-              onToggle={handleToggle}
-            />
+            <SuspenseQuery {...savingsQueries.products()} select={selectProducts}>
+              {({ data: products }) => (
+                <SavingsProductList products={products} selectedProductId={selectedProductId} onToggle={handleToggle} />
+              )}
+            </SuspenseQuery>
           </Suspense>
         </ErrorBoundary>
       )}
@@ -118,16 +128,35 @@ export function SavingsCalculatorPage() {
       {activeTab === 'results' && (
         <ErrorBoundary>
           <Suspense fallback={<SavingsResults.Loading />}>
-            <SavingsResults
-              monthlyAmount={monthlyAmount}
-              term={term}
-              targetAmount={targetAmount}
-              selectedProductId={selectedProductId}
-              onToggle={handleToggle}
-            />
+            <SuspenseQuery {...savingsQueries.products()} select={selectProducts}>
+              {({ data: products }) => (
+                <SavingsResults
+                  products={products}
+                  monthlyAmount={monthlyAmount}
+                  term={term}
+                  targetAmount={targetAmount}
+                  selectedProductId={selectedProductId}
+                  onToggle={handleToggle}
+                />
+              )}
+            </SuspenseQuery>
           </Suspense>
         </ErrorBoundary>
       )}
     </>
   );
 }
+
+const createFilterByMonthlyAmount = (monthlyAmount: number | undefined) => (product: SavingsProduct) => {
+  if (monthlyAmount === undefined) {
+    return true;
+  }
+  return monthlyAmount >= product.minMonthlyAmount && monthlyAmount <= product.maxMonthlyAmount;
+};
+
+const createFilterByTerm = (term: number | undefined) => (product: SavingsProduct) => {
+  if (term === undefined) {
+    return true;
+  }
+  return product.availableTerms === term;
+};

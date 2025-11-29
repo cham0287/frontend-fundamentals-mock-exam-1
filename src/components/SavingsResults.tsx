@@ -1,13 +1,15 @@
 import { Border, ListHeader, ListRow, Spacing } from 'tosslib';
 import { SavingResult } from './SavingResult';
 import { SavingsProductItem } from './SavingsProductItem';
-import { useSavingsProducts } from '../hooks/useSavingsProducts';
-import { filterProducts } from '../utils/productFilter';
+
 import { calculateEarnings, calculateRecommendedMonthlyDeposit } from '../utils/savingsCalculator';
 import { formatNumber } from '../utils/formatters';
 import { RECOMMENDED_PRODUCTS_COUNT } from 'const';
 
+import { SavingsProduct } from '../types';
+
 interface SavingsResultsProps {
+  products: SavingsProduct[];
   monthlyAmount: number | undefined;
   term: number;
   targetAmount: number | undefined;
@@ -16,19 +18,13 @@ interface SavingsResultsProps {
 }
 
 export function SavingsResults({
+  products,
   monthlyAmount,
   term,
   targetAmount,
   selectedProductId,
   onToggle,
 }: SavingsResultsProps) {
-  const { data: products } = useSavingsProducts();
-
-  const filteredProducts = filterProducts(products, {
-    monthlyAmount: monthlyAmount,
-    term: term,
-  });
-
   const selectedProduct = products.find(p => p.id === selectedProductId);
 
   const expectedEarnings = selectedProduct
@@ -56,9 +52,7 @@ export function SavingsResults({
     },
   ];
 
-  const recommendedProducts = [...filteredProducts]
-    .sort((a, b) => b.annualRate - a.annualRate)
-    .slice(0, RECOMMENDED_PRODUCTS_COUNT);
+  const recommendedProducts = products.slice(0, RECOMMENDED_PRODUCTS_COUNT);
 
   return (
     <>
@@ -79,7 +73,7 @@ export function SavingsResults({
 
       <ListHeader title={<ListHeader.TitleParagraph fontWeight="bold">추천 상품 목록</ListHeader.TitleParagraph>} />
       <Spacing size={12} />
-      {recommendedProducts.map(product => (
+      {recommendedProducts.map((product: SavingsProduct) => (
         <SavingsProductItem
           key={product.id}
           product={product}
